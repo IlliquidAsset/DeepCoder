@@ -13,10 +13,32 @@ An agentic Command Line Interface (CLI) tool that enables code modification usin
 
 ## Installation
 
+### Easy Installation (Recommended)
+
 ```bash
 # Clone the repository
 git clone https://github.com/IlliquidAsset/deepcoder.git
 cd deepcoder
+
+# Run the installation script
+python install.py
+
+# Then run DeepCoder using one of these scripts:
+python run_deepcoder.py "Your instruction here"
+
+# Or if you face any issues with the above, try the simpler script:
+python run_simple.py "Your instruction here"
+```
+
+### Manual Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/IlliquidAsset/deepcoder.git
+cd deepcoder
+
+# Install dependencies
+pip install -r requirements.txt
 
 # Install the package
 pip install -e .
@@ -24,6 +46,17 @@ pip install -e .
 # For development (includes testing dependencies)
 pip install -e ".[dev]"
 ```
+
+### Troubleshooting
+
+If you encounter installation issues:
+
+1. Make sure all dependencies are installed: `pip install -r requirements.txt`
+2. Try using the standalone runner: `python run_deepcoder.py`
+3. If the module imports are still failing, try installing the dependencies individually:
+   ```bash
+   pip install typer rich pyyaml python-dotenv openai requests gitpython aiohttp
+   ```
 
 ## Configuration
 
