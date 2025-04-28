@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from enum import Enum
 
-from deepcoder.models.base import BaseModel, ModelResponse
-from deepcoder.core.file_manager import FileManager
-from deepcoder.core.git_utils import GitManager
-from deepcoder.utils.diff import create_diff
+from models.base import BaseModel, ModelResponse
+from core.file_manager import FileManager
+from core.git_utils import GitManager
+from utils.diff import create_diff
 
 logger = logging.getLogger("deepcoder.agent")
 
@@ -321,7 +321,8 @@ class Agent:
         Returns:
             str: The prompt for code generation
         """
-        prompt = f"""You are DeepCoder, an expert AI coding assistant that helps modify code based on user instructions.
+        prompt = f"""You are an expert AI coding assistant that helps modify code based on user instructions.
+You are powered by the DeepSeek Coder model, designed specifically for programming tasks.
 
 TASK TYPE: {task_type}
 
@@ -429,7 +430,8 @@ Remember:
         files = context.get("files", {})
         
         # Prepare the prompt
-        prompt = f"""You are DeepCoder, an expert AI coding assistant that helps explain code.
+        prompt = f"""You are an expert AI coding assistant that helps explain code.
+You are powered by the DeepSeek Coder model, designed specifically for programming tasks.
 
 INSTRUCTION: {instruction}
 

@@ -13,8 +13,10 @@ load_dotenv()
 # Default configuration
 DEFAULT_CONFIG = {
     "model": {
-        "platform": "togetherai",  # or "lightningai"
-        "together_api_key": None,
+        "platform": "deepseek",  # or "lightningai"
+        "model_type": "coder-v3",  # coder-v3, v3-base, r1
+        "deepseek_api_key": None,
+        "use_lightning": False,
         "lightning_endpoint_url": None,
         "lightning_api_key": None,
         "parameters": {
@@ -110,10 +112,17 @@ def _get_config_from_env() -> Dict[Any, Any]:
     if model_platform := os.environ.get("MODEL_HOST_PLATFORM"):
         env_config["model"]["platform"] = model_platform.lower()
     
-    # API keys and endpoints
-    if together_api_key := os.environ.get("TOGETHER_API_KEY"):
-        env_config["model"]["together_api_key"] = together_api_key
+    # DeepSeek configuration
+    if deepseek_api_key := os.environ.get("DEEPSEEK_API_KEY"):
+        env_config["model"]["deepseek_api_key"] = deepseek_api_key
     
+    if model_type := os.environ.get("DEEPSEEK_MODEL_TYPE"):
+        env_config["model"]["model_type"] = model_type
+    
+    if use_lightning := os.environ.get("DEEPSEEK_USE_LIGHTNING"):
+        env_config["model"]["use_lightning"] = use_lightning.lower() in ("true", "1", "yes")
+    
+    # Lightning.ai configuration
     if lightning_endpoint_url := os.environ.get("LIGHTNING_ENDPOINT_URL"):
         env_config["model"]["lightning_endpoint_url"] = lightning_endpoint_url
     
@@ -159,30 +168,50 @@ def _validate_config(config: Dict[Any, Any], strict: bool = True) -> None:
     """
     platform = config["model"]["platform"].lower()
     
-    if platform not in ["togetherai", "lightningai"]:
+    if platform not in ["deepseek", "lightningai"]:
         raise ConfigurationError(
-            f"Invalid model platform: {platform}. Must be 'togetherai' or 'lightningai'."
+            f"Invalid model platform: {platform}. Must be 'deepseek' or 'lightningai'."
         )
     
-    # Validate Together.ai configuration
-    if platform == "togetherai" and not config["model"]["together_api_key"]:
-        if strict:
+    # Validate DeepSeek configuration
+    if platform == "deepseek":
+        # Validate model type
+        model_type = config["model"].get("model_type", "coder-v3")
+        if model_type not in ["coder-v3", "v3-base", "r1"]:
             raise ConfigurationError(
-                "Missing Together.ai API key. Please provide it via config file or TOGETHER_API_KEY environment variable."
+                f"Invalid DeepSeek model type: {model_type}. Must be 'coder-v3', 'v3-base', or 'r1'."
             )
+            
+        # Check if using Lightning.ai for hosting DeepSeek
+        use_lightning = config["model"].get("use_lightning", False)
+        
+        if use_lightning:
+            # When using Lightning.ai for DeepSeek, validate Lightning config
+            if not config["model"].get("lightning_endpoint_url") and strict:
+                raise ConfigurationError(
+                    "Missing Lightning AI endpoint URL when use_lightning=True. Please provide it via config file or LIGHTNING_ENDPOINT_URL environment variable."
+                )
+            if not config["model"].get("lightning_api_key") and strict:
+                raise ConfigurationError(
+                    "Missing Lightning AI API key when use_lightning=True. Please provide it via config file or LIGHTNING_API_KEY environment variable."
+                )
+        else:
+            # Direct DeepSeek platform usage
+            if not config["model"].get("deepseek_api_key") and strict:
+                raise ConfigurationError(
+                    "Missing DeepSeek API key. Please provide it via config file or DEEPSEEK_API_KEY environment variable."
+                )
     
     # Validate Lightning AI configuration
     if platform == "lightningai":
-        if not config["model"]["lightning_endpoint_url"]:
-            if strict:
-                raise ConfigurationError(
-                    "Missing Lightning AI endpoint URL. Please provide it via config file or LIGHTNING_ENDPOINT_URL environment variable."
-                )
-        if not config["model"]["lightning_api_key"]:
-            if strict:
-                raise ConfigurationError(
-                    "Missing Lightning AI API key. Please provide it via config file or LIGHTNING_API_KEY environment variable."
-                )
+        if not config["model"].get("lightning_endpoint_url") and strict:
+            raise ConfigurationError(
+                "Missing Lightning AI endpoint URL. Please provide it via config file or LIGHTNING_ENDPOINT_URL environment variable."
+            )
+        if not config["model"].get("lightning_api_key") and strict:
+            raise ConfigurationError(
+                "Missing Lightning AI API key. Please provide it via config file or LIGHTNING_API_KEY environment variable."
+            )
 
 
 def update_config_with_cli_args(config: Dict[Any, Any], cli_args: Dict[str, Any]) -> Dict[Any, Any]:
@@ -192,6 +221,10 @@ def update_config_with_cli_args(config: Dict[Any, Any], cli_args: Dict[str, Any]
     # Update model platform if provided
     if platform := cli_args.get("platform"):
         updated_config["model"]["platform"] = platform
+    
+    # Update model type if provided
+    if model_type := cli_args.get("model_type"):
+        updated_config["model"]["model_type"] = model_type
     
     # Update model parameters if provided
     if "model_params" in cli_args:

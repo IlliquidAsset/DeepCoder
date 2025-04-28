@@ -15,12 +15,12 @@ from rich.syntax import Syntax
 from rich.prompt import Confirm
 from rich.logging import RichHandler
 
-from deepcoder.config.settings import get_config, update_config_with_cli_args
-from deepcoder.config.setup_wizard import check_first_run, run_setup_wizard
-from deepcoder.models.factory import create_model
-from deepcoder.core.agent import Agent
-from deepcoder.utils.diff import colorize_diff
-from deepcoder.core.git_utils import GitManager
+from config.settings import get_config, update_config_with_cli_args
+from config.setup_wizard import check_first_run, run_setup_wizard
+from models.factory import create_model
+from core.agent import Agent
+from utils.diff import colorize_diff
+from core.git_utils import GitManager
 
 # Set up logging
 logging.basicConfig(
@@ -39,7 +39,10 @@ app = typer.Typer(help="DeepCoder - An agentic CLI for code modification")
 def main(
     instruction: Optional[str] = typer.Argument(None, help="Natural language instruction for the coding task"),
     platform: Optional[str] = typer.Option(
-        None, "--platform", "-p", help="Model platform: 'togetherai' or 'lightningai'"
+        None, "--platform", "-p", help="Model platform: 'deepseek' or 'lightningai'"
+    ),
+    model_type: Optional[str] = typer.Option(
+        None, "--model-type", help="DeepSeek model type: 'coder-v3', 'v3-base', or 'r1'"
     ),
     temperature: Optional[float] = typer.Option(
         None, "--temperature", "-t", help="Temperature for model generation (0.0-1.0)"
@@ -68,9 +71,13 @@ def main(
     ),
 ):
     """
-    DeepCoder - An agentic command line interface for code modification using DeepSeek Coder v3.
+    DeepCoder - An agentic command line interface for code modification using DeepSeek models.
     
     Provide a natural language instruction for what you want to do, and DeepCoder will handle the rest.
+    
+    DeepCoder supports two deployment options:
+    1. Direct usage via DeepSeek platform (deepseek.com)
+    2. Self-hosted models on Lightning.ai
     """
     # Run setup wizard if explicitly requested or if this is the first run
     if setup or (instruction is None and check_first_run()):
@@ -106,6 +113,7 @@ def main(
     # Collect CLI args
     cli_args = {
         "platform": platform,
+        "model_type": model_type,
         "model_params": {
             "temperature": temperature,
             "max_tokens": max_tokens,

@@ -2,11 +2,18 @@
 # Copy this file to ~/.config/deepcoder/config.yaml or .deepcoder.yaml in your project root
 
 model:
-  # Platform: togetherai or lightningai
-  platform: "togetherai"
+  # Platform: deepseek or lightningai
+  platform: "deepseek"
   
-  # API Keys and Endpoints
-  together_api_key: "your_together_api_key_here"
+  # DeepSeek Model Type (when using deepseek platform)
+  # Options: coder-v3, v3-base, r1
+  model_type: "coder-v3"
+  
+  # DeepSeek Direct API
+  deepseek_api_key: "your_deepseek_api_key_here"
+  
+  # Lightning.ai Integration for DeepSeek models
+  use_lightning: false  # Set to true to use Lightning.ai for hosting DeepSeek models
   lightning_endpoint_url: "https://your.lightning.ai/endpoint"
   lightning_api_key: "your_lightning_api_key_here"
   

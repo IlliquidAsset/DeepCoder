@@ -26,7 +26,9 @@ def run_setup_wizard() -> Dict[str, Any]:
     # Initialize config with default values
     config = {
         "model": {
-            "platform": "togetherai",
+            "platform": "deepseek",
+            "model_type": "coder-v3",
+            "use_lightning": False,
             "parameters": {
                 "temperature": 0.2,
                 "max_tokens": 2000,
@@ -47,18 +49,46 @@ def run_setup_wizard() -> Dict[str, Any]:
     # Get platform selection
     platform = Prompt.ask(
         "Select model platform",
-        choices=["togetherai", "lightningai"],
-        default="togetherai"
+        choices=["deepseek", "lightningai"],
+        default="deepseek"
     )
     config["model"]["platform"] = platform
     
     # Get API keys and endpoints based on platform
-    if platform == "togetherai":
+    if platform == "deepseek":
         api_key = Prompt.ask(
-            "Enter your Together.ai API key",
+            "Enter your DeepSeek API key",
             password=True
         )
-        config["model"]["together_api_key"] = api_key
+        config["model"]["deepseek_api_key"] = api_key
+        
+        # Get model type
+        model_type = Prompt.ask(
+            "Select DeepSeek model type",
+            choices=["coder-v3", "v3-base", "r1"],
+            default="coder-v3"
+        )
+        config["model"]["model_type"] = model_type
+        
+        # Check if they want to use Lightning for hosting
+        use_lightning = Confirm.ask(
+            "Do you want to use Lightning.ai for hosting the DeepSeek model?",
+            default=False
+        )
+        config["model"]["use_lightning"] = use_lightning
+        
+        if use_lightning:
+            endpoint_url = Prompt.ask(
+                "Enter your Lightning AI endpoint URL",
+                default="https://api.lightning.ai/v1"
+            )
+            lightning_api_key = Prompt.ask(
+                "Enter your Lightning AI API key",
+                password=True
+            )
+            config["model"]["lightning_endpoint_url"] = endpoint_url
+            config["model"]["lightning_api_key"] = lightning_api_key
+            
     else:  # lightningai
         endpoint_url = Prompt.ask(
             "Enter your Lightning AI endpoint URL",
@@ -176,8 +206,14 @@ def save_config_to_environment(config: Dict[str, Any]) -> None:
     env_vars.append(f"export MODEL_HOST_PLATFORM={config['model']['platform']}")
     
     # API keys and endpoints
-    if config['model']['platform'] == "togetherai":
-        env_vars.append(f"export TOGETHER_API_KEY={config['model']['together_api_key']}")
+    if config['model']['platform'] == "deepseek":
+        env_vars.append(f"export DEEPSEEK_API_KEY={config['model']['deepseek_api_key']}")
+        env_vars.append(f"export DEEPSEEK_MODEL_TYPE={config['model']['model_type']}")
+        env_vars.append(f"export DEEPSEEK_USE_LIGHTNING={'true' if config['model'].get('use_lightning', False) else 'false'}")
+        
+        if config['model'].get('use_lightning', False):
+            env_vars.append(f"export LIGHTNING_ENDPOINT_URL={config['model']['lightning_endpoint_url']}")
+            env_vars.append(f"export LIGHTNING_API_KEY={config['model']['lightning_api_key']}")
     else:  # lightningai
         env_vars.append(f"export LIGHTNING_ENDPOINT_URL={config['model']['lightning_endpoint_url']}")
         env_vars.append(f"export LIGHTNING_API_KEY={config['model']['lightning_api_key']}")
@@ -234,12 +270,12 @@ def check_first_run() -> bool:
         return False
     
     # Check for complete set of environment variables
-    # We need either Together.ai or Lightning AI variables completely set
-    togetherai_complete = bool(os.environ.get("TOGETHER_API_KEY"))
+    # We need either DeepSeek or Lightning AI variables completely set
+    deepseek_complete = bool(os.environ.get("DEEPSEEK_API_KEY"))
     lightningai_complete = bool(os.environ.get("LIGHTNING_ENDPOINT_URL") and 
                                os.environ.get("LIGHTNING_API_KEY"))
     
-    if togetherai_complete or lightningai_complete:
+    if deepseek_complete or lightningai_complete:
         return False
     
     return True

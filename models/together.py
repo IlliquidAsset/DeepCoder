@@ -6,7 +6,7 @@ import json
 import aiohttp
 from typing import Dict, Any, Optional, List
 
-from deepcoder.models.base import BaseModel, ModelResponse
+from models.base import BaseModel, ModelResponse
 
 
 class TogetherAIModel(BaseModel):
