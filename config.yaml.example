@@ -1,0 +1,30 @@
+# DeepCoder CLI Configuration Example
+# Copy this file to ~/.config/deepcoder/config.yaml or .deepcoder.yaml in your project root
+
+model:
+  # Platform: togetherai or lightningai
+  platform: "togetherai"
+  
+  # API Keys and Endpoints
+  together_api_key: "your_together_api_key_here"
+  lightning_endpoint_url: "https://your.lightning.ai/endpoint"
+  lightning_api_key: "your_lightning_api_key_here"
+  
+  # Model Generation Parameters
+  parameters:
+    temperature: 0.2
+    max_tokens: 2000
+    top_p: 0.95
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    # stop: ["\n\n", "```"]  # Optional stop sequences
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: null  # Path to log file (if null, logs to stderr)
+
+# Git Integration
+git:
+  auto_stage: false  # Automatically stage changes after applying
+  auto_commit: false  # Automatically commit changes after applying
