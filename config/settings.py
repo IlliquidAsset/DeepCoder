@@ -57,12 +57,15 @@ def load_config_file() -> Dict[Any, Any]:
     return {}
 
 
-def get_config() -> Dict[Any, Any]:
+def get_config(strict: bool = False) -> Dict[Any, Any]:
     """
     Load and validate the configuration from multiple sources:
     1. Default configuration
     2. Configuration file
     3. Environment variables
+    
+    Args:
+        strict: Whether to strictly enforce validation rules
     
     Returns:
         Dict: The merged configuration
@@ -78,10 +81,25 @@ def get_config() -> Dict[Any, Any]:
     env_config = _get_config_from_env()
     _deep_update(config, env_config)
 
-    # Validate configuration
-    _validate_config(config)
+    # Check if we should use strict validation
+    # In interactive mode with no command, we can be more lenient
+    use_strict = strict or not _is_interactive()
+    
+    # Validate with appropriate strictness
+    _validate_config(config, strict=use_strict)
 
     return config
+
+
+def _is_interactive() -> bool:
+    """
+    Check if we're running in an interactive terminal.
+    
+    Returns:
+        bool: True if interactive, False otherwise
+    """
+    import sys
+    return sys.stdin.isatty() and sys.stdout.isatty()
 
 
 def _get_config_from_env() -> Dict[Any, Any]:
@@ -131,8 +149,14 @@ def _deep_update(target, source):
             target[key] = value
 
 
-def _validate_config(config: Dict[Any, Any]) -> None:
-    """Validate configuration values."""
+def _validate_config(config: Dict[Any, Any], strict: bool = True) -> None:
+    """
+    Validate configuration values.
+    
+    Args:
+        config: The configuration dictionary
+        strict: Whether to strictly enforce validation rules
+    """
     platform = config["model"]["platform"].lower()
     
     if platform not in ["togetherai", "lightningai"]:
@@ -142,20 +166,23 @@ def _validate_config(config: Dict[Any, Any]) -> None:
     
     # Validate Together.ai configuration
     if platform == "togetherai" and not config["model"]["together_api_key"]:
-        raise ConfigurationError(
-            "Missing Together.ai API key. Please provide it via config file or TOGETHER_API_KEY environment variable."
-        )
+        if strict:
+            raise ConfigurationError(
+                "Missing Together.ai API key. Please provide it via config file or TOGETHER_API_KEY environment variable."
+            )
     
     # Validate Lightning AI configuration
     if platform == "lightningai":
         if not config["model"]["lightning_endpoint_url"]:
-            raise ConfigurationError(
-                "Missing Lightning AI endpoint URL. Please provide it via config file or LIGHTNING_ENDPOINT_URL environment variable."
-            )
+            if strict:
+                raise ConfigurationError(
+                    "Missing Lightning AI endpoint URL. Please provide it via config file or LIGHTNING_ENDPOINT_URL environment variable."
+                )
         if not config["model"]["lightning_api_key"]:
-            raise ConfigurationError(
-                "Missing Lightning AI API key. Please provide it via config file or LIGHTNING_API_KEY environment variable."
-            )
+            if strict:
+                raise ConfigurationError(
+                    "Missing Lightning AI API key. Please provide it via config file or LIGHTNING_API_KEY environment variable."
+                )
 
 
 def update_config_with_cli_args(config: Dict[Any, Any], cli_args: Dict[str, Any]) -> Dict[Any, Any]:

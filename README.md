@@ -15,7 +15,7 @@ An agentic Command Line Interface (CLI) tool that enables code modification usin
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/deepcoder.git
+git clone https://github.com/IlliquidAsset/deepcoder.git
 cd deepcoder
 
 # Install the package
@@ -27,9 +27,23 @@ pip install -e ".[dev]"
 
 ## Configuration
 
+When you run DeepCoder for the first time (or with no arguments), it will automatically launch a setup wizard that guides you through the configuration process.
+
+```bash
+# Run the setup wizard explicitly
+deepcoder --setup
+
+# If you encounter issues with the interactive setup wizard,
+# you can use the non-interactive setup command
+deepcoder-setup
+
+# For completely automated setup with default values
+deepcoder-setup --defaults
+```
+
 DeepCoder supports configuration via:
 
-1. Configuration file: `~/.config/deepcoder/config.yaml`
+1. Configuration file: `~/.config/deepcoder/config.yaml` (user-level) or `.deepcoder.yaml` (project-level)
 2. Environment variables
 3. CLI flags
 
@@ -60,6 +74,12 @@ export LIGHTNING_API_KEY=your_lightning_api_key
 ## Usage
 
 ```bash
+# First-time setup
+deepcoder
+
+# Run setup wizard explicitly
+deepcoder --setup
+
 # Basic usage
 deepcoder "Refactor the login function in auth.py to use async await"
 
@@ -68,6 +88,10 @@ deepcoder --platform togetherai "Add error handling to the database connection i
 
 # Adjust model parameters
 deepcoder --temperature 0.5 "Document the user authentication module"
+
+# Git integration
+deepcoder --stage "Fix the bug in the login function"
+deepcoder --commit "Add validation to the user input"
 ```
 
 ## Development

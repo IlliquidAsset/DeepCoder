@@ -16,6 +16,7 @@ from rich.prompt import Confirm
 from rich.logging import RichHandler
 
 from deepcoder.config.settings import get_config, update_config_with_cli_args
+from deepcoder.config.setup_wizard import check_first_run, run_setup_wizard
 from deepcoder.models.factory import create_model
 from deepcoder.core.agent import Agent
 from deepcoder.utils.diff import colorize_diff
@@ -36,7 +37,7 @@ app = typer.Typer(help="DeepCoder - An agentic CLI for code modification")
 
 @app.command()
 def main(
-    instruction: str = typer.Argument(..., help="Natural language instruction for the coding task"),
+    instruction: Optional[str] = typer.Argument(None, help="Natural language instruction for the coding task"),
     platform: Optional[str] = typer.Option(
         None, "--platform", "-p", help="Model platform: 'togetherai' or 'lightningai'"
     ),
@@ -62,12 +63,39 @@ def main(
     commit: bool = typer.Option(
         False, "--commit", help="Commit changes after applying (implies --stage)"
     ),
+    setup: bool = typer.Option(
+        False, "--setup", help="Run the setup wizard"
+    ),
 ):
     """
     DeepCoder - An agentic command line interface for code modification using DeepSeek Coder v3.
     
     Provide a natural language instruction for what you want to do, and DeepCoder will handle the rest.
     """
+    # Run setup wizard if explicitly requested or if this is the first run
+    if setup or (instruction is None and check_first_run()):
+        try:
+            config = run_setup_wizard()
+            if instruction is None:
+                console.print("\n[green]Setup complete! You can now use DeepCoder with your configuration.[/green]")
+                return
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Setup wizard cancelled. Using default configuration if available.[/yellow]")
+            if instruction is None:
+                return
+        except Exception as e:
+            console.print(f"\n[red]Error during setup: {str(e)}[/red]")
+            console.print("[yellow]Using default configuration if available.[/yellow]")
+            if instruction is None:
+                return
+    
+    # If no instruction provided, show help
+    if instruction is None:
+        console.print("\n[yellow]Please provide an instruction for DeepCoder.[/yellow]")
+        console.print("Example: deepcoder \"Refactor the login function in auth.py\"")
+        console.print("\nFor more options, run: deepcoder --help")
+        return
+    
     # Set up project root
     if project_root is None:
         project_root = Path.cwd()
@@ -156,7 +184,13 @@ async def async_main(
     
     # Initialize model
     console.print(f"Initializing model (platform: [bold]{config['model']['platform']}[/bold])...")
-    model = create_model(config["model"])
+    try:
+        model = create_model(config["model"])
+    except ValueError as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        console.print("\n[yellow]Please run the setup wizard to configure DeepCoder:[/yellow]")
+        console.print("  deepcoder --setup")
+        return
     
     # Initialize agent
     agent = Agent(model, config, project_root)
