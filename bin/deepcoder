@@ -1,0 +1,18 @@
+#!/bin/bash
+# Script to run DeepCoder from anywhere
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Make sure we're using the project's python environment
+if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_DIR/.venv/bin/python"
+elif [ -f "$PROJECT_DIR/venv/bin/python" ]; then
+    PYTHON="$PROJECT_DIR/venv/bin/python"
+else
+    PYTHON="python"
+fi
+
+# Run DeepCoder
+"$PYTHON" "$PROJECT_DIR/run_deepcoder.py" "$@"

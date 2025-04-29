@@ -1,15 +1,17 @@
 # DeepCoder CLI
 
-An agentic Command Line Interface (CLI) tool that enables code modification using the DeepSeek Coder v3 model. This tool operates directly within your local file system project context via the CLI.
+An agentic Command Line Interface (CLI) tool that enables code modification using the DeepSeek Coder v3 model. This tool operates directly within your local file system project context via the CLI, providing a faithful clone of Claude Code functionality but powered by DeepSeek models.
 
 ## Features
 
-- Model Integration: Connect to DeepSeek Coder v3 via Together.ai or Lightning AI
-- Natural Language Processing: Parse instructions and identify intentions
-- Agentic Workflow: Plan and execute coding tasks
-- File System Interaction: Locate, read, modify files based on instructions
-- Change Management: Preview changes, confirm, and optionally commit to Git
-- Extensive Error Handling: Comprehensive error handling for all stages
+- **Familiar Interface**: Identical command structure and user experience to Claude Code 
+- **DeepSeek Powered**: Connect to DeepSeek Coder v3 models via DeepSeek platform or Lightning AI
+- **Interactive Mode**: Enter interactive shell mode simply by typing `deepcoder`
+- **Natural Language Processing**: Parse instructions and identify intentions
+- **Agentic Workflow**: Plan and execute coding tasks
+- **File System Interaction**: Locate, read, modify files based on instructions
+- **Change Management**: Preview changes, confirm, and optionally commit to Git
+- **Extensive Error Handling**: Comprehensive error handling for all stages
 
 ## Installation
 
@@ -20,10 +22,22 @@ An agentic Command Line Interface (CLI) tool that enables code modification usin
 git clone https://github.com/IlliquidAsset/deepcoder.git
 cd deepcoder
 
-# Run the installation script
+# Run the installation script 
 python install.py
 
-# Then run DeepCoder using one of these scripts:
+# Now you can run DeepCoder with the 'deepcoder' command
+deepcoder
+
+# Or with specific instructions
+deepcoder "Your instruction here"
+```
+
+### Alternative Methods
+
+If the easy installation doesn't work, you can try these alternatives:
+
+```bash
+# Using the runner scripts directly
 python run_deepcoder.py "Your instruction here"
 
 # Or if you face any issues with the above, try the simpler script:
@@ -85,21 +99,29 @@ DeepCoder supports configuration via:
 ```yaml
 # ~/.config/deepcoder/config.yaml
 model:
-  platform: "togetherai"  # or "lightningai"
-  together_api_key: "your_together_api_key"
-  lightning_endpoint_url: "your_lightning_endpoint_url"
-  lightning_api_key: "your_lightning_api_key"
+  platform: "deepseek"  # or "lightningai"
+  model_type: "coder-v3"  # or "v3-base", "r1"
+  deepseek_api_key: "your_deepseek_api_key"
+  use_lightning: false
+  lightning_endpoint_url: "your_lightning_endpoint_url"  # only if use_lightning is true
+  lightning_api_key: "your_lightning_api_key"  # only if use_lightning is true
   parameters:
     temperature: 0.2
     max_tokens: 2000
+    top_p: 0.95
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
 ```
 
 ### Environment Variables
 
 ```bash
-export MODEL_HOST_PLATFORM=togetherai
-export TOGETHER_API_KEY=your_together_api_key
-# For Lightning AI
+export MODEL_HOST_PLATFORM=deepseek
+export DEEPSEEK_API_KEY=your_deepseek_api_key
+export DEEPSEEK_MODEL_TYPE=coder-v3
+export DEEPSEEK_USE_LIGHTNING=false
+
+# For Lightning AI hosting
 export LIGHTNING_ENDPOINT_URL=your_lightning_endpoint_url
 export LIGHTNING_API_KEY=your_lightning_api_key
 ```
@@ -107,17 +129,20 @@ export LIGHTNING_API_KEY=your_lightning_api_key
 ## Usage
 
 ```bash
-# First-time setup
+# Interactive mode (default)
 deepcoder
 
 # Run setup wizard explicitly
 deepcoder --setup
 
-# Basic usage
+# Basic usage with a single command
 deepcoder "Refactor the login function in auth.py to use async await"
 
 # Specify model platform
-deepcoder --platform togetherai "Add error handling to the database connection in db.py"
+deepcoder --platform deepseek "Add error handling to the database connection in db.py"
+
+# Specify model type
+deepcoder --model-type coder-v3 "Create unit tests for the authentication module"
 
 # Adjust model parameters
 deepcoder --temperature 0.5 "Document the user authentication module"
@@ -125,7 +150,18 @@ deepcoder --temperature 0.5 "Document the user authentication module"
 # Git integration
 deepcoder --stage "Fix the bug in the login function"
 deepcoder --commit "Add validation to the user input"
+
+# Interactive mode with specific options
+deepcoder -i --temperature 0.7
 ```
+
+### Interactive Mode Commands
+
+When in interactive mode, you can:
+
+- Type natural language instructions to perform coding tasks
+- Use `exit` or `quit` to exit the interactive session
+- Press Ctrl+C to cancel the current operation
 
 ## Development
 

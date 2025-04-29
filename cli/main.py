@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.logging import RichHandler
 
 from config.settings import get_config, update_config_with_cli_args
@@ -69,6 +69,9 @@ def main(
     setup: bool = typer.Option(
         False, "--setup", help="Run the setup wizard"
     ),
+    interactive: bool = typer.Option(
+        False, "--interactive", "-i", help="Run in interactive mode"
+    ),
 ):
     """
     DeepCoder - An agentic command line interface for code modification using DeepSeek models.
@@ -78,30 +81,25 @@ def main(
     DeepCoder supports two deployment options:
     1. Direct usage via DeepSeek platform (deepseek.com)
     2. Self-hosted models on Lightning.ai
+    
+    Running without arguments (just 'deepcoder') enters interactive mode automatically.
     """
     # Run setup wizard if explicitly requested or if this is the first run
-    if setup or (instruction is None and check_first_run()):
+    if setup or (instruction is None and not interactive and check_first_run()):
         try:
             config = run_setup_wizard()
-            if instruction is None:
+            if instruction is None and not interactive:
                 console.print("\n[green]Setup complete! You can now use DeepCoder with your configuration.[/green]")
                 return
         except (KeyboardInterrupt, EOFError):
             console.print("\n[yellow]Setup wizard cancelled. Using default configuration if available.[/yellow]")
-            if instruction is None:
+            if instruction is None and not interactive:
                 return
         except Exception as e:
             console.print(f"\n[red]Error during setup: {str(e)}[/red]")
             console.print("[yellow]Using default configuration if available.[/yellow]")
-            if instruction is None:
+            if instruction is None and not interactive:
                 return
-    
-    # If no instruction provided, show help
-    if instruction is None:
-        console.print("\n[yellow]Please provide an instruction for DeepCoder.[/yellow]")
-        console.print("Example: deepcoder \"Refactor the login function in auth.py\"")
-        console.print("\nFor more options, run: deepcoder --help")
-        return
     
     # Set up project root
     if project_root is None:
@@ -120,6 +118,28 @@ def main(
         }
     }
     
+    # If no instruction provided or interactive mode requested, start interactive mode
+    if instruction is None or interactive:
+        try:
+            asyncio.run(
+                interactive_mode(
+                    cli_args=cli_args,
+                    project_root=project_root,
+                    no_confirm=no_confirm,
+                    stage=stage,
+                    commit=commit
+                )
+            )
+        except KeyboardInterrupt:
+            console.print("\n[bold red]Operation cancelled by user[/bold red]")
+            sys.exit(1)
+        except Exception as e:
+            console.print(f"[bold red]Error:[/bold red] {str(e)}")
+            logger.exception("Unhandled exception")
+            sys.exit(1)
+        return
+    
+    # Process a single instruction
     try:
         # Run the async main function
         asyncio.run(
@@ -317,6 +337,115 @@ def handle_explanation(explanation: str) -> None:
     """
     console.print("\n[bold green]Explanation:[/bold green]")
     console.print(Panel(explanation, border_style="green"))
+
+
+async def interactive_mode(
+    cli_args: Dict[str, Any],
+    project_root: Path,
+    no_confirm: bool,
+    stage: bool,
+    commit: bool
+) -> None:
+    """
+    Run DeepCoder in interactive mode, where it continuously prompts for instructions.
+    
+    Args:
+        cli_args: CLI arguments
+        project_root: Project root directory
+        no_confirm: Whether to skip confirmation
+        stage: Whether to stage changes in Git
+        commit: Whether to commit changes
+    """
+    # Show startup banner
+    console.print(
+        Panel.fit(
+            "[bold blue]DeepCoder[/bold blue] - Interactive Mode\n"
+            "Type your instructions and press Enter. Type 'exit' or 'quit' to exit.",
+            border_style="blue"
+        )
+    )
+    
+    # Load and update configuration
+    console.print("Loading configuration...")
+    config = get_config()
+    config = update_config_with_cli_args(config, cli_args)
+    
+    # Update git settings from CLI args
+    if "git" not in config:
+        config["git"] = {}
+    
+    config["git"]["auto_stage"] = stage or commit
+    config["git"]["auto_commit"] = commit
+    
+    # Check if project is a Git repository
+    git_manager = GitManager(project_root)
+    if git_manager.is_git_repo():
+        console.print(f"Project at [bold]{project_root}[/bold] is a Git repository")
+    else:
+        if stage or commit:
+            console.print("[yellow]Warning: Project is not a Git repository, ignoring --stage and --commit flags[/yellow]")
+            config["git"]["auto_stage"] = False
+            config["git"]["auto_commit"] = False
+    
+    # Initialize model
+    console.print(f"Initializing model (platform: [bold]{config['model']['platform']}[/bold])...")
+    try:
+        model = create_model(config["model"])
+    except ValueError as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        console.print("\n[yellow]Please run the setup wizard to configure DeepCoder:[/yellow]")
+        console.print("  deepcoder --setup")
+        return
+    
+    # Initialize agent
+    agent = Agent(model, config, project_root)
+    
+    # Interactive loop
+    while True:
+        try:
+            # Get instruction from user
+            instruction = Prompt.ask("\n[bold blue]DeepCoder>[/bold blue]")
+            
+            # Check for exit command
+            if instruction.lower() in ["exit", "quit"]:
+                console.print("[green]Exiting DeepCoder. Goodbye![/green]")
+                break
+            
+            # Skip empty instructions
+            if not instruction.strip():
+                continue
+            
+            # Process instruction
+            with console.status(f"Processing instruction: [bold]{instruction}[/bold]..."):
+                result = await agent.process_instruction(instruction)
+            
+            # Check for errors
+            if error := result.get("error"):
+                console.print(f"[bold red]Error:[/bold red] {error}")
+                continue
+            
+            # Handle results based on whether we have changes or explanation
+            if result.get("changes"):
+                await handle_code_changes(
+                    result["changes"], 
+                    no_confirm, 
+                    agent, 
+                    git_manager,
+                    config["git"]["auto_stage"],
+                    config["git"]["auto_commit"]
+                )
+            elif result.get("explanation"):
+                handle_explanation(result["explanation"])
+            else:
+                console.print("[yellow]No changes or explanation generated[/yellow]")
+                
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Operation cancelled. Type 'exit' or 'quit' to exit DeepCoder.[/yellow]")
+            continue
+        except Exception as e:
+            console.print(f"[bold red]Error during processing:[/bold red] {str(e)}")
+            logger.exception("Unhandled exception")
+            continue
 
 
 if __name__ == "__main__":

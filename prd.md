@@ -24,6 +24,8 @@ This project will replicate Claude Code's functionality with the following chang
 - Maintain exact feature parity with Claude Code where possible
 - Preserve the same command structure and user experience
 
+**Clarification:** This project aims to build a *new CLI application* (DeepCoder) that *replicates the user-facing behavior and command-line interface* of the existing Claude Code CLI. The core technical task is to *replace the underlying API calls* from Anthropic's model API to Deepseek's model API (via Lightning.ai or platform.deepseek.com). The logic for parsing user instructions, interacting with the file system, performing Git operations, presenting diffs, and managing the agent's workflow *within the client application* should be implemented to *match the functionality* of the Claude Code CLI. The goal is to clone the *client*, not the underlying generative model architecture or training data.
+
 ### Key Capabilities to Clone
 1. Command-line interface for delegating coding tasks
 2. Multi-step reasoning for complex coding operations
@@ -256,6 +258,49 @@ Post-launch improvements could include:
 4. IDE integrations
 5. Web interface options
 
-## 12. Conclusion
+## 12. Implementation Roadmap
 
-This project aims to deliver a functionally identical clone of Claude Code powered by DeepSeek models on Lightning.ai. By maintaining exact feature parity while replacing the underlying model infrastructure, we can provide users with the same powerful coding assistant capabilities while offering the benefits of self-hosting and control over the model infrastructure.
+The following roadmap outlines the remaining work needed to complete the DeepCoder project:
+
+### Phase 1: Core Functionality (Completed)
+- ✅ Basic CLI structure and command parsing
+- ✅ Interactive mode implementation
+- ✅ DeepSeek model integration 
+- ✅ Configuration system
+- ✅ Setup wizard
+- ✅ Single command installation (`deepcoder`)
+
+### Phase 2: Feature Parity (In Progress)
+- ⏳ Multi-step reasoning for complex tasks
+- ⏳ File system operations (read, write, search)
+- ⏳ Git integration improvements (branch management, PR creation)
+- ⏳ Enhanced error handling and recovery
+- ⏳ Test mode for development without API keys
+
+### Phase 3: Advanced Features
+- 🔲 Language-specific code analysis
+- 🔲 Code refactoring capabilities
+- 🔲 Test generation
+- 🔲 Documentation generation
+- 🔲 Project structure analysis
+- 🔲 Performance optimizations
+
+### Phase 4: Extended Integration
+- 🔲 IDE integrations
+- 🔲 CI/CD pipeline integration
+- 🔲 Team collaboration features
+- 🔲 Web interface option
+- 🔲 Multi-model fallback support
+
+### Phase 5: Production Readiness
+- 🔲 Comprehensive testing across platforms
+- 🔲 Security review and hardening
+- 🔲 Documentation and tutorials
+- 🔲 Community contribution guidelines
+- 🔲 Release packaging
+
+## 13. Conclusion
+
+This project aims to deliver a functionally identical clone of Claude Code powered by DeepSeek models on Lightning.ai or the DeepSeek platform. By maintaining exact feature parity while replacing the underlying model infrastructure, we can provide users with the same powerful coding assistant capabilities while offering the benefits of self-hosting and control over the model infrastructure.
+
+The interactive mode implemented in the CLI allows for a seamless user experience similar to Claude Code, with the ability to maintain context across multiple instructions and provide immediate feedback to users. Future development will focus on enhancing the reasoning capabilities, file system operations, and language-specific features to match or exceed Claude Code's functionality.

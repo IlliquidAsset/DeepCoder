@@ -32,13 +32,16 @@ class DeepSeekModel(BaseModel):
         super().__init__(config)
         self.api_key = config.get("deepseek_api_key")
         
-        if not self.api_key:
+        # Check for test mode to allow running without API key
+        self.test_mode = config.get("test_mode", False) or self.api_key == "YOUR_API_KEY_HERE"
+        
+        if not self.api_key and not self.test_mode:
             raise ValueError("DeepSeek API key is required")
         
         # Set up endpoint - either direct or through Lightning.ai
         self.use_lightning = config.get("use_lightning", False)
         
-        if self.use_lightning:
+        if self.use_lightning and not self.test_mode:
             self.endpoint_url = config.get("lightning_endpoint_url")
             self.lightning_api_key = config.get("lightning_api_key")
             
@@ -65,10 +68,59 @@ class DeepSeekModel(BaseModel):
         Returns:
             ModelResponse: The model's response
         """
+        # In test mode, return a simulated response
+        if self.test_mode:
+            return await self._generate_test_response(prompt)
+        
+        # Normal API usage
         if self.use_lightning:
             return await self._generate_via_lightning(prompt)
         else:
             return await self._generate_direct(prompt)
+            
+    async def _generate_test_response(self, prompt: str) -> ModelResponse:
+        """
+        Generate a test response for demonstration purposes.
+        
+        Args:
+            prompt: The prompt to send to the model
+            
+        Returns:
+            ModelResponse: A simulated model response
+        """
+        # Create a simple test response based on the input prompt
+        prompt_parts = prompt.split()
+        word_count = min(25, len(prompt_parts))
+        
+        if "help" in prompt.lower():
+            content = "This is a simulated response in test mode. Here are some commands you can try:\n- Create a new file\n- Fix a bug\n- Refactor code\n- Add tests"
+        elif any(x in prompt.lower() for x in ["exit", "quit"]):
+            content = "Exiting DeepCoder. Goodbye!"
+        elif any(x in prompt.lower() for x in ["create", "new", "add"]):
+            content = "I'll create that for you. This is a simulated response in test mode, so no actual file will be created."
+        elif any(x in prompt.lower() for x in ["fix", "bug", "error"]):
+            content = "I'll help fix that issue. This is a simulated response in test mode, so no actual changes will be made."
+        else:
+            # Echo back some of the input words
+            content = f"Echo (test mode): {' '.join(prompt_parts[:word_count])}..."
+            
+        return ModelResponse(
+            content=content,
+            raw_response={
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": content
+                        },
+                        "index": 0,
+                        "finish_reason": "stop"
+                    }
+                ],
+                "model": self.model_name,
+                "test_mode": True
+            }
+        )
     
     async def _generate_direct(self, prompt: str) -> ModelResponse:
         """

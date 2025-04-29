@@ -20,11 +20,22 @@ if not os.path.exists(main_script):
 args = sys.argv[1:]
 args_str = " ".join(f'"{arg}"' for arg in args)
 
-# Run the main script with the provided arguments
-try:
+# If no arguments provided, run in interactive mode
+if not args:
+    print("Starting DeepCoder in interactive mode...")
+    # No need to pass any additional flags - interactive mode is default now
+    cmd = f"{sys.executable} {main_script}"
+else:
+    # Run with the provided arguments
     cmd = f"{sys.executable} {main_script} {args_str}"
+
+# Run the command
+try:
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
+except KeyboardInterrupt:
+    print("\nOperation cancelled by user")
+    sys.exit(0)
 except subprocess.CalledProcessError as e:
     print(f"Error running DeepCoder: {e}")
     sys.exit(1)
